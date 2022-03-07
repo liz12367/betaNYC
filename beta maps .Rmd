@@ -1,0 +1,175 @@
+---
+title: "schools"
+author: "Lizbeth Jima"
+date: "2/23/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Clear Memory
+rm(list = ls())
+gc()
+
+```
+
+# to do : covid data zipcodes in Manhattan 
+
+```{r}
+library(readxl)
+district_demo <- read_excel("Downloads/demographic-snapshot-2016-17-to-2020-21---public.xlsx", sheet = 4)
+head(district_demo)
+library(dplyr)
+library(magrittr)
+district_demo2 = district_demo %>% 
+  filter(Year== "2020-21") %>%
+  mutate(SchoolDist = as.numeric(`Administrative District`))
+
+library(sf)
+
+```
+
+
+
+```{r}
+#install.packages("tmap")
+library(tmap)
+```
+
+
+
+```{r}
+st_read("Downloads/nysd_22a/nysd.shp")
+district_poly <- st_read("Downloads/nysd_22a/nysd.shp")
+
+x = district_poly %>%
+      filter(SchoolDist<7) %>%
+  merge(district_demo2, by = "SchoolDist")
+
+qtm(x, fill = "% Poverty", 
+    style = "white", 
+    text.root=100, 
+    fill.title= "2020-21 % Poverty in Manhattan")
+
+
+```
+
+
+```{r}
+library(readr)
+zipcode_data <- read_csv("https://raw.githubusercontent.com/nychealth/coronavirus-data/master/latest/last7days-by-modzcta.csv")
+head(zipcode_data)
+
+zipcode_polygon <- st_read("Downloads/ZIP_CODE_040114 (3)/ZIP_CODE_040114.shp")
+head(zipcode_polygon)
+table1 <- zipcode_polygon %>%
+  select(ZIPCODE, geometry, PO_NAME, COUNTY,) 
+table2 = zipcode_data %>% 
+  select(modzcta, modzcta_name, percentpositivity_7day)
+
+table3 = merge(table1, table2, by.x = "ZIPCODE" , by.y = "modzcta")
+  
+
+qtm(table3, fill = "percentpositivity_7day", 
+    style = "white", 
+    text.root=100, 
+    fill.title= "COVID 7 Day Average")
+
+mn_table = table3 %>%
+  filter(COUNTY == "New York") 
+
+qtm(mn_table, fill = "percentpositivity_7day", 
+    style = "white", 
+    text.root=100, 
+    fill.title= "COVID 7 Day Average in Manhattan")
+
+
+```
+#Can we do another similarly color coded map to show districts with higher vs lower proportions of FSF and C4E allocations?
+
+```{r}
+#join data 
+
+#library(readxl)
+#sam <- read_excel("Downloads/FY2022_SAM005_T01.xlsx", skip = 3)
+#head(sam)
+
+library(readxl)
+alldata <- read.csv("Downloads/all_data.csv")
+head(alldata)
+
+#Extract First n Characters from String in R
+alldata2 <- alldata %>% mutate (SchoolDist = as.numeric(substr(DBN,1,2))) %>%
+  group_by(SchoolDist) %>%
+  summarise(fsf_sum= sum(FY22.FSF.Allocation)/sum(Total.Enrollment), cfe_sum = sum (FY22.SAM)/sum(Total.Enrollment)) 
+#normalize ^ 
+#shapefile for school district
+
+x = district_poly %>%
+      filter(SchoolDist<7) %>%
+  merge(alldata2, by = "SchoolDist")
+
+qtm(x, fill = "fsf_sum", 
+    style = "white", 
+    text.root=10, 
+    fill.title= "FSF Funding")
+
+qtm(x, fill = "cfe_sum", 
+    style = "white", 
+    text.root=100, 
+    fill.title= "C4E Funding")
+
+ggplot() +
+  geom_sf(data = x,
+          aes(fill = cfe_sum), 
+          size = 0) +
+  scale_fill_continuous(low="yellow", high="green",
+                        name = "C4E Funding") +
+  coord_sf(crs = "EPSG:2263",
+           default_crs = "EPSG:4326") +
+  theme_void()
+
+
+ggplot() +
+  geom_sf(data = x,
+          aes(fill = fsf_sum), 
+          size = 0) +
+  scale_fill_continuous(low="yellow", high="green",
+                        name = "FSF Funding") +
+  coord_sf(crs = "EPSG:2263",
+           default_crs = "EPSG:4326") +
+  theme_void()
+
+
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+```{r}
+# load required packages
+library(sf)
+library(tidyverse)
+#install.packages("tidygeocoder")
+library(tidygeocoder)
+```
+
+```{r}
+# load geojson file
+seismic <- st_read("seismic.geojson")
+
+# examine the data
+glimpse(seismic)
+view(seismic)
+```
+
+
+
+
+
+
